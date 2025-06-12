@@ -5,6 +5,8 @@
 #' per grid reference and date.
 #'
 #' @param data A dataframe containing species observation data with at least the columns `tik`, `GRIDREF`, and `lower_date`.
+#' @param min.Recs Minimum number of records per species required for inclusion. Ignored if subset == FALSE.
+#' @param nyr Minimum number of visits to a monad each year required for inclusion. Ignored if subset == FALSE.
 #'
 #' @details 
 #' This function performs several steps to standardise and enhance a species dataset:
@@ -27,7 +29,7 @@
 #'
 #' @export
 
-prep_occ_data = function(data){
+prep_occ_data = function(data, subset = FALSE, min.Recs = 10, nyr = 2){
 
 # Read and preprocess data
 data <- data %>% 
@@ -46,8 +48,7 @@ unique_gridrefs = unique(unique_gridrefs[!is.na(unique_gridrefs)]) # unique to r
 
 # Merge with the original data, whilst obtaining the country, and converting to northing and easting
 easting_northing_map_df = data.frame(monad = unique_gridrefs) %>%
-left_join(monad_country_df %>% select(monad, region)) %>%
-mutate(region = tolower(region)) %>%
+left_join(monad_region %>% select(monad, region)) %>%
 cbind(OSgrid2GB_EN(unique_gridrefs)) %>% 
 rename(northing = NORTHING, easting = EASTING)
 
@@ -56,12 +57,19 @@ data = data %>%
 left_join(easting_northing_map_df, join_by(gridref == monad)) %>%
 filter(!is.na(region))
 
+# Add date variables using occti helper function
 data = add_dates(data)
 
+# Calculate list length
 data = data %>%
 group_by(gridref, date) %>%
 mutate(listL = length(unique(species))) %>%
 ungroup()
+
+# subset data using subset_occ_data helper function
+if (subset){
+  data = subset_occ_data(data, min.Recs = min.Recs, nyr = nyr)
+}
 
 return(data)
 }

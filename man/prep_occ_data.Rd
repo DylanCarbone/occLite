@@ -4,10 +4,14 @@
 \alias{prep_occ_data}
 \title{Prepare species Observation Data}
 \usage{
-prep_occ_data(data)
+prep_occ_data(data, subset = FALSE, min.Recs = 10, nyr = 2)
 }
 \arguments{
 \item{data}{A dataframe containing species observation data with at least the columns \code{tik}, \code{GRIDREF}, and \code{lower_date}.}
+
+\item{min.Recs}{Minimum number of records per species required for inclusion. Ignored if subset == FALSE.}
+
+\item{nyr}{Minimum number of visits to a monad each year required for inclusion. Ignored if subset == FALSE.}
 }
 \value{
 A cleaned and enriched data frame with spatial coordinates, region info, date parts, and list length values.
