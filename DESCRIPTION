@@ -1,0 +1,25 @@
+Package: occLite
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Dylan", "Carbone", , "dylcar@ceh.ac.uk", role = c("aut", "cre", "cph")),
+    person("Gary", "Powney", , "gawn@ceh.ac.uk", role = "aut")
+  )
+Description: An example package for generating random numbers.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    knitr,
+    rmarkdown,
+    rslurm
+VignetteBuilder: knitr
+Imports: 
+    data.table,
+    dplyr,
+    ggplot2,
+    lubridate,
+    stats,
+    unmarked
