@@ -22,7 +22,8 @@ Imports:
     ggplot2,
     lubridate,
     stats,
-    unmarked
+    unmarked,
+    boot
 Depends: 
     R (>= 3.5)
 LazyData: true
