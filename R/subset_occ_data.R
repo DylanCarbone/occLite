@@ -19,7 +19,7 @@
 #' }
 #'
 #' @export
-subset_occ_data <- function(data, min.Recs = 10, nyr = 2) {
+subset_occ_data <- function(data, min.Recs = 50, nyr = 2) {
   # Store original numbers for reporting
   original_n <- nrow(data)
   original_species <- length(unique(data$species))
