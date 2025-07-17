@@ -4,7 +4,7 @@
 \alias{subset_occ_data}
 \title{Subset Occupancy Data by Species and Site Sampling Frequency}
 \usage{
-subset_occ_data(data, min.Recs = 10, nyr = 2)
+subset_occ_data(data, min.Recs = 50, nyr = 2)
 }
 \arguments{
 \item{data}{A \code{data.frame} or tibble containing the columns \code{species}, \code{gridref}, and \code{Year}.}

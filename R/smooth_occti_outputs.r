@@ -30,6 +30,7 @@ smooth_occti_outputs <- function(occti_outputs,
   }
   
   # Prepare list to hold LOESS summaries for each species and occupancy plots
+  loess_predictions <- list()
   loess_summaries <- list()
   occupancy_plots <- list()
   
@@ -58,7 +59,7 @@ smooth_occti_outputs <- function(occti_outputs,
     }))
     
     # Fit LOESS model per iteration and predict occupancy per year
-    loess_predictions <- psiA_draws %>%
+    loess_prediction <- psiA_draws %>%
       group_by(Iteration) %>%
       do({
         # Try to fit a LOESS curve to each simulated iteration
@@ -68,8 +69,16 @@ smooth_occti_outputs <- function(occti_outputs,
       }) %>%
       ungroup()
     
+    # Backconvert
+    loess_prediction <- loess_prediction %>%
+      mutate(Pred = inv.logit(Pred),
+      species = species)
+    
+    # Capture predictions across iterations
+    loess_predictions[[species]] <- loess_prediction
+    
     # Summarise LOESS results across all iterations
-    loess_summary <- loess_predictions %>%
+    loess_summary <- loess_prediction %>%
       group_by(Year) %>%
       summarise(
         psiA_loess_mean = mean(Pred, na.rm = TRUE),
@@ -84,8 +93,8 @@ smooth_occti_outputs <- function(occti_outputs,
 
     # Create the final ggplot with original and smoothed estimates
     p <- ggplot(occ_data, aes(x = Year)) + 
-      geom_line(data = loess_summary, aes(y = inv.logit(psiA_loess_mean)), colour = "darkred", size = 1.2) +
-      geom_ribbon(data = loess_summary, aes(ymin = inv.logit(psiA_loess_lower), ymax = inv.logit(psiA_loess_upper)), fill = "red", alpha = 0.15) +
+      geom_line(data = loess_summary, aes(y = psiA_loess_mean), colour = "darkred", size = 1.2) +
+      geom_ribbon(data = loess_summary, aes(ymin = psiA_loess_lower, ymax = psiA_loess_upper), fill = "red", alpha = 0.15) +
       labs(x = "Year", y = "Occupancy Index") +
       theme_minimal() +
       ggtitle(paste(species, "- loess span =", span)) +
@@ -99,7 +108,10 @@ smooth_occti_outputs <- function(occti_outputs,
       ggsave(filename = file_name, plot = p, width = plot_width, height = plot_height, dpi = 300)
     }
   }
+
+  # combine loess_predictions into a table
+  loess_predictions_df = bind_rows(loess_predictions)
   
   # Return the list of LOESS summaries and the occupancy plots
-  return(list("loess_summaries" = loess_summaries, "occupancy_plots" = occupancy_plots))
+  return(list("loess_predictions" = loess_predictions_df, "loess_summaries" = loess_summaries, "occupancy_plots" = occupancy_plots))
 }

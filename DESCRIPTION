@@ -23,7 +23,12 @@ Imports:
     lubridate,
     stats,
     unmarked,
-    boot
+    boot,
+    BRCmap,
+    BRCindicators
 Depends: 
     R (>= 3.5)
 LazyData: true
+remotes:
+    colinharrower/BRCmap
+    BiologicalRecordsCentre/BRCindicators

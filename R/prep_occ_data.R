@@ -26,6 +26,8 @@
 #' @import dplyr
 #' @importFrom lubridate yday year
 #' @importFrom stats na.omit
+#' @importFrom stats na.omit
+#' @importFrom BRCmap fmt_gridref reformat_gr OSgrid2GB_EN
 #'
 #' @export
 
