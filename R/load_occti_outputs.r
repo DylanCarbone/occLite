@@ -7,16 +7,33 @@
 #' @return A named list where each element contains the output of one species and is named by the species.
 #' 
 #' @export
-load_occti_outputs <- function(results_dir) {
+load_occti_outputs <- function(results_dir, pattern = "*occupancy_output.rds", region_filter = NULL) {
   # Get full paths to all matching RDS files
-  paths <- list.files(results_dir, pattern = "*occupancy_output.rds", full.names = TRUE)
-  
+  paths <- list.files(results_dir, pattern = pattern, full.names = TRUE)
+
+  if (!is.null(region_filter)) {
+    paths_basenames <- basename(paths)
+    keep <- grepl(tolower(region_filter), paths_basenames)
+    paths <- paths[keep]
+  }
+
+  if(length(paths) == 0){
+    stop("No files found. Are you sure you specified the correct directory, pattern, and region filter?")
+  }
+
   occti_outputs <- list()  # Create an empty list to store the loaded data
   
   for (path in paths) {
     sp_output <- readRDS(path)  # Load each RDS file
+
+    # TEMP: fix to unstandardised naming
+    if(is.null(sp_output$species)){
+      species_name <- sp_output$Species
+    } else{
+
+      species_name <- sp_output$species
+    }
     
-    species_name <- sp_output$Species  # Use the species name as the list element name
     occti_outputs[[species_name]] <- sp_output  # Store the species output in the list
   }
   

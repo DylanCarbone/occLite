@@ -35,7 +35,7 @@ prep_occ_data = function(data, subset = FALSE, min.Recs = 10, nyr = 2){
 
 # Read and preprocess data
 data <- data %>% 
-  rename(species = tik, gridref = GRIDREF, date = lower_date) %>%
+  # rename(species = tik, gridref = GRIDREF, date = lower_date) %>%
   mutate(date = as.Date(date),
          yday = lubridate::yday(date),
          Year = lubridate::year(date))

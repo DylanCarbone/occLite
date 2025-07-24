@@ -6,6 +6,7 @@
 \usage{
 calculate_indicator(
   loess_predictions,
+  sparta_output = TRUE,
   method,
   min_year = NULL,
   max_year = NULL,

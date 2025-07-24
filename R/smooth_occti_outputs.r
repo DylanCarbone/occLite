@@ -52,26 +52,26 @@ smooth_occti_outputs <- function(occti_outputs,
       
       # Simulate n_iter draws for the year
       data.frame(
-        Year = year,
-        Iteration = 1:n_iter,
-        Simulated_psiA = rnorm(n_iter, mean = mean_val, sd = sd_val)
+        year = year,
+        iteration = 1:n_iter,
+        simulated_psiA = rnorm(n_iter, mean = mean_val, sd = sd_val)
       )
     }))
     
     # Fit LOESS model per iteration and predict occupancy per year
     loess_prediction <- psiA_draws %>%
-      group_by(Iteration) %>%
+      group_by(iteration) %>%
       do({
         # Try to fit a LOESS curve to each simulated iteration
-        mod <- try(loess(Simulated_psiA ~ Year, data = ., span = span), silent = TRUE)
-        pred_vals <- if (inherits(mod, "try-error")) rep(NA, nrow(.)) else predict(mod, newdata = data.frame(Year = .$Year))
-        data.frame(Year = .$Year, Pred = pred_vals)
+        mod <- try(loess(simulated_psiA ~ year, data = ., span = span), silent = TRUE)
+        pred_vals <- if (inherits(mod, "try-error")) rep(NA, nrow(.)) else predict(mod, newdata = data.frame(year = .$year))
+        data.frame(year = .$year, pred = pred_vals)
       }) %>%
       ungroup()
     
     # Backconvert
     loess_prediction <- loess_prediction %>%
-      mutate(Pred = inv.logit(Pred),
+      mutate(pred = inv.logit(pred),
       species = species)
     
     # Capture predictions across iterations
@@ -79,12 +79,12 @@ smooth_occti_outputs <- function(occti_outputs,
     
     # Summarise LOESS results across all iterations
     loess_summary <- loess_prediction %>%
-      group_by(Year) %>%
+      group_by(year) %>%
       summarise(
-        psiA_loess_mean = mean(Pred, na.rm = TRUE),
-        psiA_loess_lower = quantile(Pred, 0.025, na.rm = TRUE),
-        psiA_loess_upper = quantile(Pred, 0.975, na.rm = TRUE),
-        psiA_loess_se = sd(Pred, na.rm = TRUE) / sqrt(sum(!is.na(Pred))),
+        psiA_loess_mean = mean(pred, na.rm = TRUE),
+        psiA_loess_lower = quantile(pred, 0.025, na.rm = TRUE),
+        psiA_loess_upper = quantile(pred, 0.975, na.rm = TRUE),
+        psiA_loess_se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))),
         .groups = "drop"
       )
     
@@ -92,7 +92,7 @@ smooth_occti_outputs <- function(occti_outputs,
     loess_summaries[[species]] <- loess_summary
 
     # Create the final ggplot with original and smoothed estimates
-    p <- ggplot(occ_data, aes(x = Year)) + 
+    p <- ggplot(occ_data, aes(x = year)) + 
       geom_line(data = loess_summary, aes(y = psiA_loess_mean), colour = "darkred", size = 1.2) +
       geom_ribbon(data = loess_summary, aes(ymin = psiA_loess_lower, ymax = psiA_loess_upper), fill = "red", alpha = 0.15) +
       labs(x = "Year", y = "Occupancy Index") +
