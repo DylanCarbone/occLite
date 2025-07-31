@@ -30,5 +30,5 @@ Depends:
     R (>= 3.5)
 LazyData: true
 remotes:
-    colinharrower/BRCmap
+    colinharrower/BRCmap,
     BiologicalRecordsCentre/BRCindicators

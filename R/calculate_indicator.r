@@ -37,7 +37,6 @@
 #' @export
 
 calculate_indicator <- function(loess_predictions, sparta_output = TRUE, method, min_year = NULL, max_year = NULL, bma_ind = NULL){
-
 # Pivot the sparta outputs (if the outputs are sparta)
 if(sparta_output){
    loess_predictions = translate_sparta(loess_predictions)
