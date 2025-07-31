@@ -2,35 +2,37 @@
 % Please edit documentation in R/prep_occ_data.R
 \name{prep_occ_data}
 \alias{prep_occ_data}
-\title{Prepare species Observation Data}
+\title{Prepare Species Observation Data for Occupancy Modelling}
 \usage{
 prep_occ_data(data, subset = FALSE, min.Recs = 10, nyr = 2)
 }
 \arguments{
-\item{data}{A dataframe containing species observation data with at least the columns \code{tik}, \code{GRIDREF}, and \code{lower_date}.}
+\item{data}{A data frame containing species observation records. Must include columns named \code{species}, \code{gridref}, and \code{date}.}
 
-\item{min.Recs}{Minimum number of records per species required for inclusion. Ignored if subset == FALSE.}
+\item{subset}{Logical. If \code{TRUE}, the dataset is filtered to retain only species and sites with sufficient data based on \code{min.Recs} and \code{nyr}.}
 
-\item{nyr}{Minimum number of visits to a monad each year required for inclusion. Ignored if subset == FALSE.}
+\item{min.Recs}{Integer. Minimum number of records per species required for inclusion (only used if \code{subset = TRUE}).}
+
+\item{nyr}{Integer. Minimum number of years in which a monad must have at least one visit (only used if \code{subset = TRUE}).}
 }
 \value{
-A cleaned and enriched data frame with spatial coordinates, region info, date parts, and list length values.
+A processed data frame containing cleaned and enriched species observations with spatial and temporal fields suitable for occupancy analysis.
 }
 \description{
-This function reads and preprocesses species observation data by renaming columns, formatting dates,
-converting grid references to monads, obtaining the grid region (England, Wales, Scotland, or Northern Ireland), converting to northing and easting, and computing list lengths
-per grid reference and date.
+This function reads and preprocesses species observation data by standardising column names, formatting dates,
+converting grid references to monads, adding spatial coordinates (northing and easting), assigning country region
+labels (England, Wales, Scotland, or Northern Ireland), and calculating list length per grid square and date.
 }
 \details{
-This function performs several steps to standardise and enhance a species dataset:
+This function performs the following operations:
 \itemize{
-\item Renames \code{tik} to \code{species}, \code{GRIDREF} to \code{gridref}, and \code{lower_date} to \code{date}.
-\item Extracts year and day-of-year (\code{Year} and \code{yday}) using \code{lubridate}.
-\item Converts grid references to standardised monads and filters out invalid ones.
-\item Converts monads to northing and easting values.
-\item Uses reference dataframe to assign region names
-\item Filters out unmatched records and ensures region and spatial data are present.
-\item Calls \code{add_dates()} to add any date-related columns.
-\item Computes \code{listL}, the number of unique species per \code{gridref} and \code{date}.
+\item Ensures \code{date} is in \code{Date} format and extracts year and day-of-year.
+\item Filters and reformats grid references to monads (1 km precision).
+\item Assigns country region labels using an internal reference data frame \code{monad_region}.
+\item Converts monads to British National Grid easting and northing coordinates.
+\item Removes records without region information or spatial coordinates.
+\item Calls \code{add_dates()} to add derived date-related columns.
+\item Calculates list length (\code{listL}) as the number of unique species per \code{gridref} and \code{date}.
+\item Optionally filters data using \code{subset_occ_data()} based on species frequency and visit coverage.
 }
 }
