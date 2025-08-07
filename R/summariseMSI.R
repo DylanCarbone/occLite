@@ -31,19 +31,21 @@
 #' @export
 #' 
 summariseMSI <- function(label, plotType, indicator, method, plot = TRUE, writePlot = TRUE, minYear, maxYear)  {
-    summary_df <- indicator$indicator$summary
+
+    summary_df <- indicator$summary
     n <- max(summary_df$Species_Number)
     years <- minYear:maxYear
 
     if (plotType == "indicator") {
-      p1 <- ggplot(summary_df[summary_df$year %in% years,], aes(x = year, y = indicator)) + 
+      plot_df = summary_df[summary_df$year %in% years,]
+      p1 <- ggplot(plot_df, aes(x = year, y = indicator)) + 
         geom_ribbon(aes(ymax = upper, ymin = lower), fill = "grey80") + 
         geom_line(size = 0.25) + 
         geom_point(size = 0.25) + 
         theme_linedraw() + 
         ylab("Occupancy index") + 
         xlab("") + 
-        ylim(c(0, 150)) + 
+        ylim(c(0, max(plot_df$upper + 50))) + 
         ggtitle(label) + 
         annotate("text", x = min(years) + 1, y = 30, label = paste(n, "species"))
 

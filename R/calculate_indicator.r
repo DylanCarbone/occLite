@@ -83,7 +83,7 @@ trend_assessment_summary <- trend_assessment(dat = indicator_output, summary = s
                                     start_year = min(indicator_output$Year), end_year = max(indicator_output$Year))
 }
 
-else{
+else if(method == "lambda"){
 
 # Create the array using acast
 occ_array <- reshape2::acast(loess_predictions, species ~ year ~ iteration, value.var = "pred")
@@ -93,15 +93,15 @@ indicator_output <- lambda_indicator(input = occ_array, index = 100,
                                     threshold_sd = Inf, threshold_Rhat = Inf, threshold_yrs = 10, 
                                     upperQuantile = 0.975, lowerQuantile = 0.025)
 
+# separate summary from indicator_output
 summary <- indicator_output$summary
+indicator_output$summary = NULL
 
-year = indicator_output$summary %>%
-  filter(!is.na(indicator)) %>%
-  summarise(max_year = max(year)) %>%
-  pull(max_year)
+start_year = min(filter(summary, is.na(indicator) == FALSE) %>% select(year)) # FM changed the way start_year and end_year are calculated see comment below for explanation
+end_year = max(filter(summary, is.na(indicator) == FALSE) %>% select(year))
 
 trend_assessment_summary <- trend_assessment(
-    indicator_output, summary = summary, method = method, start_year = year, end_year = year)  
+    indicator_output, summary = summary, method = method, start_year = start_year, end_year = end_year)  
 }
 
 return(list("indicator" = indicator_output, "summary" = summary, "final" = trend_assessment_summary))

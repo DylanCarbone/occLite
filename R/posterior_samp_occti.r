@@ -72,7 +72,7 @@ posterior_samp_occti <- function(occti_outputs,
       }) %>%
       ungroup() %>% 
       filter(!is.na(pred)) %>% # Sometimes model predictions fail
-      mutate(pred = bound_zero_one(pred), pred_logit = bound_for_logit(pred),
+      mutate(pred = bound_zero_one(pred),
       species = species)
 
     # Capture predictions across iterations

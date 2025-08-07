@@ -5,6 +5,7 @@ trend_assessment <- function (dat, summary, method = "lambda", start_year, end_y
   if (!method %in% c("lambda", "bma")) 
     stop("Method must be one of 'lambda' or 'bma'")
   if (method == "lambda") {
+
     sp_assess <- BRCindicators:::species_assessment(dat = dat$LogLambda, 
                                                     method = method, start_year = start_year, end_year = end_year, # LB replace start_year = start_year +1 with start_year =start_year
                                                     species_stat = species_stat, plot = FALSE)

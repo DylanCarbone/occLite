@@ -32,6 +32,10 @@
 #' @export
 prep_occ_data = function(data, subset = FALSE, min.Recs = 10, nyr = 2){
 
+if(!all(c("date", "species", "gridref") %in% colnames(data))){
+  stop("Your dataframe must include columns named date, species, and gridref")
+}
+
 # Read and preprocess data
 data <- data %>% 
   mutate(date = as.Date(date),
