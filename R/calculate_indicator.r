@@ -57,7 +57,7 @@ loess_predictions = loess_predictions %>% filter(year >= min_year, year <= max_y
 if(method == "bma"){
     
 mean_se_logit <- loess_predictions %>%
-    mutate(pred = logit(bound_numbers(pred))) %>%
+    mutate(pred = logit(bound_for_logit(pred))) %>%
     group_by(species, year) %>%
     summarise(index = mean(pred),
     se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))))

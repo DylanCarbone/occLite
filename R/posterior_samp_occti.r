@@ -1,6 +1,6 @@
-#' Generate OCCTI Occupancy Plots
+#' Generate OCCTI posterior samples
 #'
-#' Generates LOESS-smoothed occupancy plots for each species and optionally saves them to disk.
+#' Generates smoothed posterior samples of occupancy from loess model predictions. Optionally saves models to disk.
 #' Also returns a list of LOESS-smoothed values (mean and bounds) per species.
 #'
 #' @param occti_outputs A named list of occupancy outputs as returned by `load_occti_outputs()`.
@@ -15,7 +15,7 @@
 #'
 #' @import ggplot2 dplyr patchwork boot
 #' @export
-smooth_occti_outputs <- function(occti_outputs,
+posterior_samp_occti <- function(occti_outputs,
                                  save_dir = "occupancy_plots",
                                  save_plots = TRUE,
                                  span = 0.75,
@@ -29,19 +29,14 @@ smooth_occti_outputs <- function(occti_outputs,
     dir.create(save_dir, recursive = TRUE)
   }
   
-  # Prepare list to hold LOESS summaries for each species and occupancy plots
-  loess_predictions <- list()
-  loess_summaries <- list()
-  occupancy_plots <- list()
+  # Prepare list to hold LOESS predictions for each species and occupancy plots
+  loess_predictions_all <- list()
   
   # Loop through each species in the input list
   for (species in names(occti_outputs)) {
     
-    # Extract the occupancy index data, bound to be less than 1 and more than 0, then logit-transform
-    occ_data <- occti_outputs[[species]]$Index %>%
-      mutate(psiA = logit(bound_numbers(psiA)),
-      psiA_L = logit(bound_numbers(psiA_L)), 
-      psiA_U = logit(bound_numbers(psiA_U)))
+    # Extract the occupancy index data
+    occ_data <- occti_outputs[[species]]$Index
     
     # Generate simulated occupancy values using normal distribution
     psiA_draws <- do.call(rbind, lapply(1:nrow(occ_data), function(i) {
@@ -50,68 +45,72 @@ smooth_occti_outputs <- function(occti_outputs,
       # Estimate standard deviation from 95% CI bounds
       sd_val <- (occ_data$psiA_U[i] - occ_data$psiA_L[i]) / (2 * 1.96)
       
-      # Simulate n_iter draws for the year
+      # Simulate n_iter draws for the year and only take draws between zero and one
       data.frame(
         year = year,
         iteration = 1:n_iter,
         simulated_psiA = rnorm(n_iter, mean = mean_val, sd = sd_val)
       )
-    }))
+    })) %>%
+    filter(simulated_psiA <= 1, simulated_psiA >= 0)
+  
+    years_range = range(occ_data$Year)
+    years = years_range[1]:years_range[2]
     
     # Fit LOESS model per iteration and predict occupancy per year
-    loess_prediction <- psiA_draws %>%
+    loess_predictions <- psiA_draws %>%
       group_by(iteration) %>%
       do({
-        # Try to fit a LOESS curve to each simulated iteration
         mod <- try(loess(simulated_psiA ~ year, data = ., span = span), silent = TRUE)
-        pred_vals <- if (inherits(mod, "try-error")) rep(NA, nrow(.)) else predict(mod, newdata = data.frame(year = .$year))
-        data.frame(year = .$year, pred = pred_vals)
-      }) %>%
-      ungroup()
-    
-    # Backconvert
-    loess_prediction <- loess_prediction %>%
-      mutate(pred = inv.logit(pred),
-      species = species)
-    
-    # Capture predictions across iterations
-    loess_predictions[[species]] <- loess_prediction
-    
-    # Summarise LOESS results across all iterations
-    loess_summary <- loess_prediction %>%
-      group_by(year) %>%
-      summarise(
-        psiA_loess_mean = mean(pred, na.rm = TRUE),
-        psiA_loess_lower = quantile(pred, 0.025, na.rm = TRUE),
-        psiA_loess_upper = quantile(pred, 0.975, na.rm = TRUE),
-        psiA_loess_se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))),
-        .groups = "drop"
-      )
-    
-    # Store the summary in the output list
-    loess_summaries[[species]] <- loess_summary
+        
+        if (inherits(mod, "try-error")) {
+          message(sprintf("LOESS model failed to compile for an iteration inside species '%s'. Skipping iteration.", species))
+          return(NULL)  # Return nothing for this iteration
+        }
 
-    # Create the final ggplot with original and smoothed estimates
-    p <- ggplot(occ_data, aes(x = year)) + 
-      geom_line(data = loess_summary, aes(y = psiA_loess_mean), colour = "darkred", size = 1.2) +
-      geom_ribbon(data = loess_summary, aes(ymin = psiA_loess_lower, ymax = psiA_loess_upper), fill = "red", alpha = 0.15) +
-      labs(x = "Year", y = "Occupancy Index") +
-      theme_minimal() +
-      ggtitle(paste(species, "- loess span =", span)) +
-      ylim(0, 1)
-    
-    occupancy_plots[[species]] = p
-    
+        data.frame(year = years, pred = predict(mod, newdata = data.frame(year = years)))
+      }) %>%
+      ungroup() %>% 
+      filter(!is.na(pred)) %>% # Sometimes model predictions fail
+      mutate(pred = bound_zero_one(pred), pred_logit = bound_for_logit(pred),
+      species = species)
+
+    # Capture predictions across iterations
+    loess_predictions_all[[species]] <- loess_predictions
+
     # Save plot if enabled
     if (save_plots) {
+
+      # Summarise LOESS results across all iterations
+      loess_summary_occ <- loess_predictions %>%
+        group_by(year) %>%
+        summarise(
+          psiA_loess_mean = mean(pred, na.rm = TRUE),
+          psiA_loess_lower = quantile(pred, 0.025, na.rm = TRUE),
+          psiA_loess_upper = quantile(pred, 0.975, na.rm = TRUE),
+          psiA_loess_se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))),
+          .groups = "drop"
+        )
+
+      # Create the final ggplot with original and smoothed estimates
+      p <- ggplot(occ_data, aes(x = year)) + 
+        geom_line(data = loess_summary_occ, aes(y = psiA_loess_mean), colour = "darkred", size = 1.2) +
+        geom_ribbon(data = loess_summary_occ, aes(ymin = psiA_loess_lower, ymax = psiA_loess_upper), fill = "red", alpha = 0.15) +
+        labs(x = "Year", y = "Occupancy Index") +
+        theme_minimal() +
+        ggtitle(paste(species, "- loess span =", span)) +
+        ylim(0, 1)
+
       file_name <- file.path(save_dir, paste0(species, ".png"))
+      
       ggsave(filename = file_name, plot = p, width = plot_width, height = plot_height, dpi = 300)
     }
-  }
+
+    }
 
   # combine loess_predictions into a table
-  loess_predictions_df = bind_rows(loess_predictions)
+  loess_predictions_df = bind_rows(loess_predictions_all)
   
   # Return the list of LOESS summaries and the occupancy plots
-  return(list("loess_predictions" = loess_predictions_df, "loess_summaries" = loess_summaries, "occupancy_plots" = occupancy_plots))
+  return(loess_predictions_df)
 }
