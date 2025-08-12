@@ -37,6 +37,7 @@
 #' @export
 
 calculate_indicator <- function(loess_predictions, sparta_output = TRUE, method, min_year = NULL, max_year = NULL, bma_ind = NULL){
+
 # Pivot the sparta outputs (if the outputs are sparta)
 if(sparta_output){
    loess_predictions = translate_sparta(loess_predictions)
@@ -60,10 +61,10 @@ mean_se_logit <- loess_predictions %>%
     mutate(pred = logit(bound_for_logit(pred))) %>%
     group_by(species, year) %>%
     summarise(index = mean(pred),
-    se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))))
+    se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred)))) %>%
+    mutate(se = ifelse(se != 0, se, 1e-6))
 
-indicator_output <- BRCindicators::bma(data = mean_se_logit, seFromData = TRUE, 
-                            m.scale = "logit") # keep at loge for now
+indicator_output <- BRCindicators::bma(data = mean_se_logit, seFromData = TRUE, m.scale = "logit")
 
 if (bma_ind != "prime") {
     summary <- data.frame(indicator = indicator_output$Index.M, 
