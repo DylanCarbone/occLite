@@ -2,72 +2,80 @@
 % Please edit documentation in R/tempSampPost.R
 \name{tempSampPost}
 \alias{tempSampPost}
-\title{tempSampPost - updated version to handle flat filenames (e.g. tik_123.rdata)}
+\title{Extract and Combine Posterior Samples for Multiple Species}
 \usage{
 tempSampPost(
   indata,
   keep,
-  keep_iter = NULL,
-  output_path,
   region,
   sample_n = 999,
   tolerance = 0,
-  group_name = "",
-  combined_output = TRUE,
-  max_year_model = NULL,
-  min_year_model = NULL,
-  write = FALSE,
   minObs = NULL,
-  scaleObs = "global",
   t0,
-  tn,
-  parallel = FALSE,
-  n.cores = NULL,
-  filetype = "rdata"
+  tn
 )
 }
 \arguments{
-\item{indata}{Path to the directory containing .rdata model files}
+\item{indata}{Character. Path to the directory containing model output files
+(either \code{.rdata} or \code{.rds} files, depending on how models were saved).}
 
-\item{keep}{Character vector of file basenames without extension (e.g. "tik_123")}
+\item{keep}{Character vector of species identifiers (file basenames without extensions)
+to process. Each entry should match a model file in \code{indata}.}
 
-\item{keep_iter}{NULL unless using chained models}
+\item{region}{Character. Region code for extracting posterior samples (e.g.,
+\code{"ENGLAND"}, \code{"WALES"}, or \code{"UK"}). Must match entries in the model
+metadata (\code{out$regions} or \code{out$region_aggs}).}
 
-\item{output_path}{Where to save combined posterior samples (if write = TRUE)}
+\item{sample_n}{Numeric. Target number of posterior draws to retain per species
+(default \code{999}).}
 
-\item{region}{Region label (used in metadata column names)}
+\item{tolerance}{Numeric. Allowed tolerance between the available number of posterior
+samples and \code{sample_n}. Positive values allow oversampling; negative values
+cause the species to be dropped if fewer than \code{sample_n} draws are available.}
 
-\item{sample_n}{Number of posterior samples to extract (default = 999)}
+\item{minObs}{Numeric or \code{NULL}. Minimum number of observations required for
+a species to be included in the output. If \code{NULL}, the check is skipped.}
 
-\item{tolerance}{Allowed deviation from sample_n}
+\item{t0}{Numeric. Start year (inclusive) of the analysis window.}
 
-\item{group_name}{Group name (used in output filename)}
-
-\item{combined_output}{Logical, whether to merge posterior samples across species}
-
-\item{max_year_model}{Optionally filter model years}
-
-\item{min_year_model}{Optionally filter model years}
-
-\item{write}{Logical, whether to write output to disk}
-
-\item{minObs}{Filter species with fewer observations (optional)}
-
-\item{scaleObs}{Either "global" or "regional"}
-
-\item{t0}{Start year for summary}
-
-\item{tn}{End year for summary}
-
-\item{parallel}{Logical, whether to use parallel execution}
-
-\item{n.cores}{Optional override for number of cores}
-
-\item{filetype}{Either "rdata" or "rds"}
+\item{tn}{Numeric. End year (inclusive) of the analysis window.}
 }
 \value{
-List with posterior samples and metadata
+A list with two elements:
+\describe{
+\item{\code{samp_post}}{Data frame of posterior occupancy samples for all species,
+with one row per iteration per species, columns for each year (\code{year_<YYYY>}),
+plus \code{iteration} and \code{species}.}
+\item{\code{meta}}{Data frame of combined species-level metadata, including:
+\itemize{
+\item Observation counts (global and regional)
+\item First and last years with observations
+\item Largest year gap in observations
+\item Rule-of-thumb (ROT) metrics for data quality
+}
+All metadata columns are suffixed with \code{"_r_<region>"}.
+}
+}
 }
 \description{
-tempSampPost - updated version to handle flat filenames (e.g. tik_123.rdata)
+Iterates over a set of species model outputs, extracts posterior occupancy samples
+and associated metadata using \code{\link{combineSamps}}, and returns combined
+results for all species in the selection.
+}
+\details{
+This function:
+\enumerate{
+\item Loops over each species in \code{keep}.
+\item Calls \code{\link{combineSamps}} to load the species' model output,
+filter by region and observation count, and extract posterior draws.
+\item Binds all posterior samples into one data frame (\code{samp_post}).
+\item Binds all metadata rows into one data frame (\code{meta}) and
+appends the region suffix to all column names.
+}
+
+Species that fail to load, lack sufficient observations, or do not meet
+\code{sample_n} requirements (within \code{tolerance}) are skipped.
+}
+\seealso{
+\code{\link{combineSamps}}, \code{\link{applySamp_single}}
 }

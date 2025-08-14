@@ -25,7 +25,8 @@ Imports:
     unmarked,
     boot,
     BRCmap,
-    BRCindicators
+    BRCindicators,
+    patchwork
 Depends: 
     R (>= 3.5)
 LazyData: true

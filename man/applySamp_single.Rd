@@ -2,64 +2,85 @@
 % Please edit documentation in R/applySamp_single.r
 \name{applySamp_single}
 \alias{applySamp_single}
-\title{applySamp_single - Applies the sampling process for a single taxonomic group and filter set.}
+\title{Apply Posterior Sampling for a Single Region}
 \usage{
 applySamp_single(
   modPath,
-  metaPath,
-  group,
-  region,
-  indicator = "all",
+  region = NULL,
   nSamps = 999,
   minObs = 50,
-  scaleObs = "global",
-  sample = TRUE,
+  tolerance = 0,
   write = FALSE,
   outPath = NULL,
   speciesToKeep = NA,
-  drop = TRUE,
   t0,
-  tn,
-  clipBy = "group",
-  parallel = TRUE
+  tn
 )
 }
 \arguments{
-\item{modPath}{Character. Base path to the model outputs.}
+\item{modPath}{Character. Path to the directory containing model output files
+in \code{.rdata} format. Each file should correspond to a single species.}
 
-\item{metaPath}{Character. Path to the metadata.}
+\item{region}{Character or \code{NULL}. Region code for filtering results.
+If \code{NULL}, all models are processed without regional subsetting.
+Should match the region names used in the model metadata.}
 
-\item{group}{Character. Taxonomic group (e.g. "Bees").}
+\item{nSamps}{Numeric. Number of posterior samples to draw per species
+(default \code{999}).}
 
-\item{region}{Character. One of "UK", "GB", "ENGLAND", "WALES", "SCOTLAND", or "NORTHERN_IRELAND".}
+\item{minObs}{Numeric. Minimum number of observations required per species
+within the time window \code{t0}–\code{tn} for inclusion in sampling
+(default \code{50}).}
 
-\item{indicator}{Character. One of "priority", "pollinators", or "all".}
+\item{tolerance}{Numeric. Allowed tolerance when matching the available
+number of iterations to \code{nSamps}. Positive values allow slight over-sampling,
+negative values will trigger an error if fewer than \code{nSamps} iterations are available
+(default \code{0}).}
 
-\item{nSamps}{Numeric. Number of posterior samples to draw.}
+\item{write}{Logical. If \code{TRUE}, saves the combined sampling output
+(posterior samples and metadata) to \code{outPath}.}
 
-\item{minObs}{Numeric. Minimum number of observations per species.}
+\item{outPath}{Character. File path to save results when \code{write = TRUE}.
+The object is saved as an R binary file (\code{.RData}) containing a list
+with two elements: sampled posteriors and metadata.}
 
-\item{scaleObs}{Character. Either "global" or "region".}
+\item{speciesToKeep}{Character vector (comma-separated string with no spaces) or \code{NA}.
+Optional list of species names to include. Matching is case-insensitive.
+Species not found in \code{modPath} will trigger a warning.}
 
-\item{sample}{Logical. If TRUE, samples the posterior; if FALSE, just extracts mean estimates.}
+\item{t0}{Numeric. First year of the analysis window (inclusive).}
 
-\item{write}{Logical. If TRUE, saves results to \code{outPath}.}
-
-\item{outPath}{Character. Path to save output if \code{write = TRUE}.}
-
-\item{speciesToKeep}{Character vector of species to keep (comma-separated string or NA).}
-
-\item{drop}{Logical. Whether to drop species based on exclusion advice.}
-
-\item{t0, }{tn Numeric. Start and end years for analysis.}
-
-\item{clipBy}{Character. One of "species" or "group".}
-
-\item{parallel}{Logical. Whether to use parallel processing.}
+\item{tn}{Numeric. Last year of the analysis window (inclusive).}
 }
 \value{
-A list with elements: samp_post, meta, indicator, group_name, region, clipBy, minObs.
+A list with two elements:
+\describe{
+\item{\code{samp_post}}{Data frame of posterior samples for each species,
+with columns for species name, iteration number, and posterior estimates per year.}
+\item{\code{meta}}{Data frame of metadata for each species, including
+record counts, first and last years with data, and rule-of-thumb metrics.}
+}
 }
 \description{
-applySamp_single - Applies the sampling process for a single taxonomic group and filter set.
+Runs the posterior sampling process for all species models in a given region,
+applying observation count filters and optionally restricting to a user-specified
+set of species. This function is a wrapper around \code{tempSampPost()}
+for a single region, reading model outputs from \code{.rdata} files and returning
+sampled posterior draws and associated metadata.
+}
+\details{
+The function:
+\enumerate{
+\item Identifies available \code{.rdata} model files in \code{modPath}.
+\item Optionally filters to a given set of species.
+\item Runs \code{tempSampPost()} to extract and sample posterior draws.
+\item Optionally writes the results to disk.
+}
+The filtering step uses \code{minObs} to drop species with insufficient
+observations in the specified time window (\code{t0}–\code{tn}).
+Sampling is performed if more posterior draws are available than \code{nSamps},
+subject to the \code{tolerance} setting.
+}
+\seealso{
+\code{\link{tempSampPost}}, \code{\link{combineSamps}}
 }

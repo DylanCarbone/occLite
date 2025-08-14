@@ -2,53 +2,59 @@
 % Please edit documentation in R/summariseMSI.R
 \name{summariseMSI}
 \alias{summariseMSI}
-\title{Summarise and Plot Occupancy Index Trends}
+\title{Summarise and Plot Multi-Species Occupancy Indicators}
 \usage{
-summariseMSI(
-  label,
-  plotType,
-  indicator,
-  method,
-  plot = TRUE,
-  writePlot = TRUE,
-  minYear,
-  maxYear
-)
+summariseMSI(indicator, label, writePlot = TRUE, minYear, maxYear)
 }
 \arguments{
-\item{label}{Character. A label to use as the plot title and file name if saving plots.}
+\item{indicator}{List. Output from a multi-species indicator analysis in
+\code{sparta_indicator} format. Must contain:
+\itemize{
+\item \code{indicator$summary} — Data frame with yearly index values,
+uncertainty bounds, and number of contributing species.
+\item \code{indicator$final$species_assessment} — Data frame with
+per-species trend assessment categories (factor or character).
+}}
 
-\item{plotType}{Character. Type of plot to produce. Options are "indicator" (for time-series index),
-"nSpecies" (number of species through time), or "uncertainty" (width of interval vs number of species).}
+\item{label}{Character. A label for the plots; used as the plot title and
+in the saved file name (if \code{writePlot = TRUE}).}
 
-\item{indicator}{A list containing the output of a multi-species indicator analysis. Must include
-elements named \code{indicator$indicator$summary} and \code{indicator$final$species_assessment}.}
+\item{writePlot}{Logical. If \code{TRUE}, saves the combined plot to a
+PNG file in the working directory with filename \code{"ind_<label>.png"}.}
 
-\item{method}{Character. The method used to compute trends, e.g. "lambda". Required to enable trend bar plots.}
+\item{minYear}{Integer. First year to include in the time-series plot.}
 
-\item{plot}{Logical. If TRUE, plots are displayed; if FALSE, summary data is returned instead.}
-
-\item{writePlot}{Logical. If TRUE and plotType == "indicator" with method == "lambda", the plot will be saved to disk.}
-
-\item{minYear}{Integer. The minimum year to include in plots.}
-
-\item{maxYear}{Integer. The maximum year to include in plots.}
+\item{maxYear}{Integer. Last year to include in the time-series plot.}
 }
 \value{
-If plot = TRUE, returns a ggplot or grid of plots. If plot = FALSE, returns a list of:
-\itemize{
-\item out1: A data.frame of summarised occupancy values by year
-\item change: A table of species trend categories across time periods
-\item raw: A data.frame of raw trend category labels for each species
+A named list with two ggplot objects:
+\describe{
+\item{\code{indicator}}{Time-series occupancy index plot with shaded uncertainty ribbon.}
+\item{\code{species_change}}{Final-year stacked bar plot showing the proportion of species
+in each trend category.}
 }
 }
 \description{
-A modified function to summarise and optionally visualise occupancy index results
-from multi-species indicators (MSI). Produces either time-series plots of the
-index, bar plots of species trend assessments, or plots of index uncertainty
-versus number of contributing species. Optionally returns summary data tables instead of plots.
+Creates summary plots for a multi-species occupancy indicator, including:
+\itemize{
+\item A time-series plot of the occupancy index with uncertainty intervals.
+\item A stacked bar plot showing the proportion of species in each final-year trend category.
+}
+Optionally saves the combined plot to disk.
+}
+\details{
+This function:
+\enumerate{
+\item Extracts the time-series summary data from \code{indicator$summary} and filters to the
+specified year range (\code{minYear}–\code{maxYear}).
+\item Plots the occupancy index with a ribbon showing the 95\\% credible interval,
+points and lines for yearly estimates, and the number of species annotated on the plot.
+\item Extracts the final-year trend categories from
+\code{indicator$final$species_assessment$category} and plots them as proportions.
+\item Combines the two plots side-by-side using \pkg{patchwork}.
+\item Saves the combined plot to file if \code{writePlot = TRUE}.
+}
 
-This version is adapted for \code{sparta_indicator}-style output, where the main summary
-data are stored in \code{indicator$indicator$summary}, and trend assessments are found
-in \code{indicator$final$species_assessment}.
+The y-axis limit for the time-series plot is set slightly above the maximum upper bound
+to provide visual padding. Trend category bars are ordered in reverse to match the intended legend order.
 }

@@ -2,26 +2,88 @@
 % Please edit documentation in R/combineSamps.r
 \name{combineSamps}
 \alias{combineSamps}
-\title{combineSamps}
+\title{Load and Sample Posterior Distributions for a Single Species}
 \usage{
-combineSamps(
-  species,
-  indata,
-  keep_iter,
-  region,
-  sample_n,
-  tolerance,
-  combined_output,
-  minObs,
-  scaleObs,
-  t0,
-  tn,
-  filetype,
-  iter
-)
+combineSamps(species, indata, region, sample_n, tolerance, minObs, t0, tn)
+}
+\arguments{
+\item{species}{Character. Species name or identifier corresponding to the
+model output file \code{<species>.rdata} in \code{indata}.}
+
+\item{indata}{Character. Path to the directory containing \code{.rdata} model output files.}
+
+\item{region}{Character or \code{NULL}. Region code for extracting posterior
+samples (e.g., \code{"ENGLAND"}, \code{"WALES"}, etc.). If \code{NULL},
+global samples are extracted.}
+
+\item{sample_n}{Numeric. Target number of posterior draws to retain.}
+
+\item{tolerance}{Numeric. Allowed tolerance between the number of available
+posterior samples and \code{sample_n}. Positive values allow slight over-sampling;
+negative values will cause the function to stop if fewer than \code{sample_n}
+samples are available.}
+
+\item{minObs}{Numeric or \code{NULL}. Minimum number of observations required
+within the analysis window (\code{t0}–\code{tn}) for the species to be included.
+If \code{NULL}, the check is skipped.}
+
+\item{t0}{Numeric. Start year of the analysis window (inclusive).}
+
+\item{tn}{Numeric. End year of the analysis window (inclusive).}
+}
+\value{
+A list of length 2:
+\describe{
+\item{\code{raw_occ}}{Data frame containing posterior occupancy samples for
+the species, with one column per year, plus \code{iteration} and \code{species}
+columns.}
+\item{\code{meta}}{Data frame of summary metadata for the species, including
+record counts (\code{nRec_glob}, \code{nRec_reg}), first and last observation
+years, largest observation gap, analysis window, and placeholder columns
+for rule-of-thumb metrics.}
+}
 }
 \description{
-This function loads and samples posterior distributions from model outputs for a given species.
-It is based on the original \code{combineSamps} function used in \code{tempSampPost} from the wrappeR package:
-https://github.com/BiologicalRecordsCentre/wrappeR
+Loads model output for a given species from an \code{.rdata} file, extracts the
+posterior occupancy samples for a specified region (or globally), filters the data
+by a specified time window and minimum observation threshold, and optionally
+downsamples the posterior draws to a target number.
+}
+\details{
+The function:
+\enumerate{
+\item Loads the model output (\code{.rdata}) for the given species.
+\item Extracts observation data and filters to the time window (\code{t0}–\code{tn}).
+\item If \code{region} is specified:
+\itemize{
+\item Uses \code{out$regions} if it is a direct region.
+\item Uses \code{out$region_aggs} if it is an aggregated region (combining multiple subregions).
+}
+\item Computes the number of observations (\code{nRec}) and drops the species if
+\code{nRec < minObs}.
+\item Checks that the requested posterior variable exists in \code{out$BUGSoutput$sims.list}.
+\item Samples or truncates posterior draws to \code{sample_n}, within the given \code{tolerance}.
+\item Constructs a metadata row summarising observation counts, years, and gaps.
+}
+
+The posterior samples are returned in wide format, with one column per model year
+prefixed with \code{"year_"}.
+}
+\examples{
+\dontrun{
+res <- combineSamps(
+  species = "apis_mellifera",
+  indata = "models/",
+  region = "ENGLAND",
+  sample_n = 500,
+  tolerance = 10,
+  minObs = 30,
+  t0 = 2000,
+  tn = 2020
+)
+}
+
+}
+\seealso{
+\code{\link{applySamp_single}}, \code{\link{tempSampPost}}
 }

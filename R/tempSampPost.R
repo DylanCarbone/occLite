@@ -1,83 +1,82 @@
-#' tempSampPost - updated version to handle flat filenames (e.g. tik_123.rdata)
+#' Extract and Combine Posterior Samples for Multiple Species
 #'
-#' @param indata Path to the directory containing .rdata model files
-#' @param keep Character vector of file basenames without extension (e.g. "tik_123")
-#' @param keep_iter NULL unless using chained models
-#' @param output_path Where to save combined posterior samples (if write = TRUE)
-#' @param region Region label (used in metadata column names)
-#' @param sample_n Number of posterior samples to extract (default = 999)
-#' @param tolerance Allowed deviation from sample_n
-#' @param group_name Group name (used in output filename)
-#' @param combined_output Logical, whether to merge posterior samples across species
-#' @param max_year_model Optionally filter model years
-#' @param min_year_model Optionally filter model years
-#' @param write Logical, whether to write output to disk
-#' @param minObs Filter species with fewer observations (optional)
-#' @param scaleObs Either "global" or "regional"
-#' @param t0 Start year for summary
-#' @param tn End year for summary
-#' @param parallel Logical, whether to use parallel execution
-#' @param n.cores Optional override for number of cores
-#' @param filetype Either "rdata" or "rds"
+#' Iterates over a set of species model outputs, extracts posterior occupancy samples 
+#' and associated metadata using \code{\link{combineSamps}}, and returns combined 
+#' results for all species in the selection.
 #'
-#' @return List with posterior samples and metadata
-#' @export
+#' @param indata Character. Path to the directory containing model output files 
+#'   (either \code{.rdata} or \code{.rds} files, depending on how models were saved).
+#' @param keep Character vector of species identifiers (file basenames without extensions)
+#'   to process. Each entry should match a model file in \code{indata}.
+#' @param region Character. Region code for extracting posterior samples (e.g., 
+#'   \code{"ENGLAND"}, \code{"WALES"}, or \code{"UK"}). Must match entries in the model 
+#'   metadata (\code{out$regions} or \code{out$region_aggs}).
+#' @param sample_n Numeric. Target number of posterior draws to retain per species 
+#'   (default \code{999}).
+#' @param tolerance Numeric. Allowed tolerance between the available number of posterior 
+#'   samples and \code{sample_n}. Positive values allow oversampling; negative values 
+#'   cause the species to be dropped if fewer than \code{sample_n} draws are available.
+#' @param minObs Numeric or \code{NULL}. Minimum number of observations required for 
+#'   a species to be included in the output. If \code{NULL}, the check is skipped.
+#' @param t0 Numeric. Start year (inclusive) of the analysis window.
+#' @param tn Numeric. End year (inclusive) of the analysis window.
+#'
+#' @return A list with two elements:
+#' \describe{
+#'   \item{\code{samp_post}}{Data frame of posterior occupancy samples for all species, 
+#'     with one row per iteration per species, columns for each year (\code{year_<YYYY>}), 
+#'     plus \code{iteration} and \code{species}.}
+#'   \item{\code{meta}}{Data frame of combined species-level metadata, including:
+#'     \itemize{
+#'       \item Observation counts (global and regional)
+#'       \item First and last years with observations
+#'       \item Largest year gap in observations
+#'       \item Rule-of-thumb (ROT) metrics for data quality
+#'     }
+#'     All metadata columns are suffixed with \code{"_r_<region>"}.
+#'   }
+#' }
+#'
+#' @details
+#' This function:
+#' \enumerate{
+#'   \item Loops over each species in \code{keep}.
+#'   \item Calls \code{\link{combineSamps}} to load the species' model output, 
+#'         filter by region and observation count, and extract posterior draws.
+#'   \item Binds all posterior samples into one data frame (\code{samp_post}).
+#'   \item Binds all metadata rows into one data frame (\code{meta}) and 
+#'         appends the region suffix to all column names.
+#' }
+#'
+#' Species that fail to load, lack sufficient observations, or do not meet 
+#' \code{sample_n} requirements (within \code{tolerance}) are skipped.
+#'
+#' @seealso
+#' \code{\link{combineSamps}}, \code{\link{applySamp_single}}
+#'
 
 tempSampPost <- function(indata,
                          keep,
-                         keep_iter = NULL,
-                         output_path,
                          region,
                          sample_n = 999,
                          tolerance = 0,
-                         group_name = "",
-                         combined_output = TRUE,
-                         max_year_model = NULL,
-                         min_year_model = NULL,
-                         write = FALSE,
                          minObs = NULL,
-                         scaleObs = "global",
                          t0,
-                         tn,
-                         parallel = FALSE,
-                         n.cores = NULL,
-                         filetype = "rdata") {
-
-  if (parallel && is.null(n.cores)) {
-    n.cores <- parallel::detectCores() - 1
-  }
-
-  iter <- NULL
-  if (!is.null(keep_iter)) {
-    findIteration <- function(list_of_file_names) {
-      list_of_file_names <- gsub('_[[:digit:]]{1}$', '', list_of_file_names)
-      iterations <- regmatches(list_of_file_names, regexpr('[[:digit:]]+$', list_of_file_names))
-      return(c(min(as.numeric(iterations)), max(as.numeric(iterations))))
-    }
-    iter <- findIteration(keep_iter)
-  }
+                         tn) {
 
   run_one <- function(sp) {
     combineSamps(sp,
                  indata = indata,
-                 keep_iter = keep_iter,
                  region = region,
                  sample_n = sample_n,
                  tolerance = tolerance,
-                 combined_output = combined_output,
                  minObs = minObs,
                  scaleObs = scaleObs,
                  t0 = t0,
-                 tn = tn,
-                 filetype = filetype,
-                 iter = iter)
+                 tn = tn)
   }
 
-  outputs <- if (parallel) {
-    parallel::mclapply(keep, run_one, mc.cores = n.cores)
-  } else {
-    lapply(keep, run_one)
-  }
+  outputs <- lapply(keep, run_one)
 
   samp_post <- do.call("rbind", lapply(outputs, function(x) x[[1]]))
   meta <- do.call("rbind", lapply(outputs, function(x) x[[2]]))
@@ -87,8 +86,6 @@ tempSampPost <- function(indata,
                      n_obs_regional = meta$nRec_reg,
                      min_year_data = meta$first,
                      max_year_data = meta$last,
-                     min_year_model = meta$firstMod,
-                     max_year_model = meta$lastMod,
                      gap_start = 0,
                      gap_end = 0,
                      gap_middle = meta$gap,
@@ -103,11 +100,6 @@ tempSampPost <- function(indata,
                      rot_HighSpec = meta$HighSpec)
 
   colnames(meta) <- paste0(colnames(meta), "_r_", region)
-
-  if (write) {
-    if (is.null(output_path)) stop("Must provide output_path when write = TRUE")
-    save(samp_post, file = file.path(output_path, paste0(group_name, "_all_spp_sample_", sample_n, "_post_", region, ".rdata")))
-  }
 
   return(list(samp_post, meta))
 }
