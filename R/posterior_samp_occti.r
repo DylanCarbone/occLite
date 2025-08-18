@@ -96,7 +96,7 @@ posterior_samp_occti <- function(occti_outputs,
         ggsave(filename = file_name, plot = p, width = plot_width, height = plot_height, dpi = 300)
       }
     } else {
-      message(sprintf("No valid iterations for species '%s'. This was likely because there were insufficient years to fit the loess model. Excluding from results.", species))
+      stop(sprintf("No valid iterations for species '%s'. This was likely because there were insufficient years to fit the loess model. Please filter the results first using occLite::filter_occupancy()", species))
     }
   }
   

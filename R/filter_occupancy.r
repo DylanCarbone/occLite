@@ -24,11 +24,19 @@
 #' #   "Species B" = list(Index = data.frame(Year=2001:2004, psiA_L=c(.05,.1,.2,.2), psiA_U=c(.9,.95,.7,.6)))
 #' # )
 #' # occti_outputs <- filter_occupancy(occti_outputs, ci_width_threshold = 0.8)
-filter_occupancy <- function(occti_outputs, ci_width_threshold = 0.8, z_score_threshold = 3) {
+filter_occupancy <- function(occti_outputs, ci_width_threshold = 0.8, z_score_threshold = 3, min_years_post_filter = 3) {
+
+    species_to_remove = c()
 
     for (species in names(occti_outputs)){
 
         occ_data <- occti_outputs[[species]]$Index
+
+        if (nrow(occ_data) == 1) {
+        message(paste("species", species, "has only one year of data. Removing species"))
+        species_to_remove <- c(species_to_remove, species)
+        next
+        }
 
         occ_data_filtered <- occ_data %>%
             mutate(ci_width = psiA_U - psiA_L,
@@ -48,9 +56,20 @@ filter_occupancy <- function(occti_outputs, ci_width_threshold = 0.8, z_score_th
             message(paste("for species", species, sum(occ_data_filtered$z_score_flag), " rows were filtered as they had z scores that are too large"))
         }
 
-        occti_outputs[[species]]$Index <- occ_data_filtered %>% filter(!ci_width_flag, !z_score_flag) %>% select(-ci_width_flag, -z_score_flag)
+        new_index = occ_data_filtered %>% filter(!ci_width_flag, !z_score_flag) %>% select(-ci_width_flag, -z_score_flag)
+
+        if(nrow(new_index) < min_years_post_filter){
+            message(paste("species", species, "has less than", min_years_post_filter , "valid years after filtering. Removing species"))
+            species_to_remove = c(species_to_remove, species)
+            next
+        } else{
+            occti_outputs[[species]]$Index <- new_index
+        }
 
     }
+
+    # Remove species that did not have sufficient years of data before or after filtering
+    occti_outputs = occti_outputs[!(names(occti_outputs) %in% species_to_remove)]
 
     return(occti_outputs)
 

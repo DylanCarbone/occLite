@@ -21,8 +21,12 @@ load_occti_outputs <- function(results_dir, pattern = "*occupancy_output.rds") {
   for (path in paths) {
     sp_output <- readRDS(path)  # Load each RDS file
 
-  species_name <- as.character(sp_output$species)
-    
+    species_name <- as.character(sp_output$species)
+
+    if(!is.null(occti_outputs[[species_name]])){
+      stop("There are duplicate species files. Did you subset your pattern by region?")
+    }
+      
     occti_outputs[[species_name]] <- sp_output  # Store the species output in the list
   }
   

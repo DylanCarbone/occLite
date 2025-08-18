@@ -10,7 +10,9 @@ calculate_indicator(
   method,
   min_year = NULL,
   max_year = NULL,
-  bma_ind = NULL
+  bma_ind = NULL,
+  save_outputs = TRUE,
+  outputs_path = "indicator_outputs.rds"
 )
 }
 \arguments{

@@ -7,7 +7,8 @@
 filter_occupancy(
   occti_outputs,
   ci_width_threshold = 0.8,
-  z_score_threshold = 3
+  z_score_threshold = 3,
+  min_years_post_filter = 3
 )
 }
 \arguments{

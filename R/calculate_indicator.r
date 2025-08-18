@@ -36,7 +36,7 @@
 #' @importFrom reshape2 acast
 #' @export
 
-calculate_indicator <- function(loess_predictions, sparta_output = TRUE, method, min_year = NULL, max_year = NULL, bma_ind = NULL){
+calculate_indicator <- function(loess_predictions, sparta_output = TRUE, method, min_year = NULL, max_year = NULL, bma_ind = NULL, save_outputs = TRUE, outputs_path = "indicator_outputs.rds"){
 
 # Pivot the sparta outputs (if the outputs are sparta)
 if(sparta_output){
@@ -105,6 +105,12 @@ trend_assessment_summary <- trend_assessment(
     indicator_output, summary = summary, method = method, start_year = start_year, end_year = end_year)  
 }
 
-return(list("indicator" = indicator_output, "summary" = summary, "final" = trend_assessment_summary))
+outputs = list("indicator" = indicator_output, "summary" = summary, "final" = trend_assessment_summary)
+
+if(save_outputs){
+saveRDS(outputs, outputs_path)
+}
+
+return(outputs)
 
 }

@@ -71,7 +71,6 @@ tempSampPost <- function(indata,
                  sample_n = sample_n,
                  tolerance = tolerance,
                  minObs = minObs,
-                 scaleObs = scaleObs,
                  t0 = t0,
                  tn = tn)
   }
