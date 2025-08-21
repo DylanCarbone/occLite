@@ -7,7 +7,7 @@
 #' @return A named list where each element contains the output of one species and is named by the species.
 #' 
 #' @export
-load_occti_outputs <- function(results_dir, pattern = "*occupancy_output.rds") {
+load_occti_outputs <- function(results_dir, pattern = "*occupancy_output.rds", start_year, end_year) {
 
   # Get full paths to all matching RDS files
   paths <- list.files(results_dir, pattern = pattern, full.names = TRUE)
@@ -26,6 +26,9 @@ load_occti_outputs <- function(results_dir, pattern = "*occupancy_output.rds") {
     if(!is.null(occti_outputs[[species_name]])){
       stop("There are duplicate species files. Did you subset your pattern by region?")
     }
+
+    sp_output$Index = sp_output$Index %>%
+    filter(Year >= start_year, Year <= end_year)
       
     occti_outputs[[species_name]] <- sp_output  # Store the species output in the list
   }

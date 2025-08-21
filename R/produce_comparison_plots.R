@@ -3,8 +3,10 @@
 #' @export
 #' 
 produce_comparison_plots <- function(occti_loess_samples, sparta_occupancy_estimates_folder, output_folder = "sparta_occti_comparison", sparta_region){
+  
+    sparta_occ_species_paths = list.files(sparta_occupancy_estimates_folder, pattern = "*.rdata", recursive = TRUE, full.names = TRUE)
 
-    sparta_occ_species = gsub(".rdata", "", basename(list.files(sparta_occupancy_estimates_folder)))
+    sparta_occ_species = gsub(".rdata", "", basename(sparta_occ_species_paths))
     
     for (species_occ in unique(occti_loess_samples$species)){
 
@@ -31,8 +33,8 @@ produce_comparison_plots <- function(occti_loess_samples, sparta_occupancy_estim
         ylim(0,1)
 
         # Obtain sparta outputs
-        load(file.path(sparta_occupancy_estimates_folder, paste0(species_occ, ".rdata")))
-
+        load(sparta_occ_species_paths[which(sparta_occ_species == species_occ)])
+        
         plot_sparta <- plot_sparta(out, reg_agg = sparta_region, main = NULL)
 
         combined = plot_sparta + plot_occti +

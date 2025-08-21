@@ -32,7 +32,7 @@ plot_sparta <- function(occDet, main = occDet$SPP_NAME, reg_agg = NULL) {
   new_data$rhat_threshold <- ifelse(new_data$Rhat < 1.1, "Good (<1.1)", "Bad (>1.1)")
   
   # plot (occupancy scale 0–1)
-  ggplot(new_data, aes(x = year, y = mean)) +
+  p = ggplot(new_data, aes(x = year, y = mean)) +
     theme_minimal() +
     geom_ribbon(aes(ymin = quant_025, ymax = quant_975), fill = "red", alpha = 0.15) +
     geom_line(colour = "darkred", size = 1.2) +
@@ -49,4 +49,6 @@ plot_sparta <- function(occDet, main = occDet$SPP_NAME, reg_agg = NULL) {
       plot.title = element_text(lineheight = .8, face = "bold"),
       legend.position = "bottom"
     )
+  
+  return(p)
 }

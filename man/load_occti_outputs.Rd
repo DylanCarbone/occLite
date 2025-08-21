@@ -4,7 +4,12 @@
 \alias{load_occti_outputs}
 \title{Load OCCTI Occupancy Outputs}
 \usage{
-load_occti_outputs(results_dir, pattern = "*occupancy_output.rds")
+load_occti_outputs(
+  results_dir,
+  pattern = "*occupancy_output.rds",
+  start_year,
+  end_year
+)
 }
 \arguments{
 \item{results_dir}{A character string specifying the directory containing OCCTI occupancy output \code{.rds} files.}

@@ -36,33 +36,58 @@ if(!all(c("date", "species", "gridref") %in% colnames(data))){
   stop("Your dataframe must include columns named date, species, and gridref")
 }
 
-# Read and preprocess data
-data <- data %>% 
-  mutate(date = as.Date(date),
-         Year = lubridate::year(date))
+# Start with unique gridref
+new_gridref <- distinct(data, gridref)
 
-# Handle unique grid references to save computation time
-unique_gridrefs = unique(data$gridref)
+# --- Step 1: formatting ---
+new_gridref <- new_gridref %>%
+  mutate(grid_refs_post_formatting = fmt_gridref(gridref))
 
-# Remove invalid formats and convert to monad
-unique_gridrefs = fmt_gridref(unique_gridrefs)
-unique_gridrefs = reformat_gr(unique_gridrefs, prec_out = 1000, pad_gr = FALSE)
-unique_gridrefs = unique(unique_gridrefs[!is.na(unique_gridrefs)]) # unique to remove new duplicates
+n_fail1 <- sum(is.na(new_gridref$grid_refs_post_formatting))
+
+message(n_fail1, " unique grid references have invalid formats")
+
+# --- Step 2: resolution standardisation ---
+new_gridref <- new_gridref %>%
+  filter(!is.na(grid_refs_post_formatting)) %>%
+  mutate(grid_refs_post_resolution_standardisation =
+           reformat_gr(grid_refs_post_formatting,
+                       prec_out = 1000, pad_gr = FALSE))
+
+n_fail2 <- sum(is.na(new_gridref$grid_refs_post_resolution_standardisation))
+
+message(n_fail2, " unique grid references have a resolution greater than monad resolution")
+
+# --- Step 3: region join ---
+new_gridref <- new_gridref %>%
+  filter(!is.na(grid_refs_post_resolution_standardisation)) %>%
+  left_join(monad_region %>% select(monad, region),
+            join_by(grid_refs_post_resolution_standardisation == monad))
+
+n_fail3 <- sum(is.na(new_gridref$region))
+
+message(n_fail3, " unique grid references could not be mapped to a region, as they fall outside of the UK")
+
+# --- Step 4: UK coordinate conversion ---
+
+# Filter grid references that have not been mapped to a region
+new_gridref <- new_gridref %>%
+    filter(!is.na(region))
 
 # You have to load the following objects from the BRCmap package
 data(datum_vars, package = "BRCmap")
 data(helmert_trans_vars, package = "BRCmap")
 
-# Merge with the original data, whilst obtaining the country, and converting to northing and easting
-easting_northing_map_df = data.frame(monad = unique_gridrefs) %>%
-left_join(monad_region %>% select(monad, region)) %>%
-cbind(OSgrid2GB_EN(unique_gridrefs)) %>% 
-rename(northing = NORTHING, easting = EASTING)
+new_gridref <- cbind(new_gridref, OSgrid2GB_EN(new_gridref$grid_refs_post_resolution_standardisation)) %>% 
+    rename(northing = NORTHING, easting = EASTING) %>%
+    select(-grid_refs_post_formatting)
 
-# Merge with the original data, removing unpaired rows
-data = data %>%
-left_join(easting_northing_map_df, join_by(gridref == monad)) %>%
-filter(!is.na(region))
+# --- Final merge ---
+data <- data %>%
+  left_join(new_gridref, by = "gridref") %>%
+  filter(!is.na(region))  %>% # This filters out all invalid grid references from the previous steps
+    select(-gridref)  %>%
+    rename(gridref = grid_refs_post_resolution_standardisation)
 
 # Add date variables using occti helper function
 data = add_dates(data)
