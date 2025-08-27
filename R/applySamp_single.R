@@ -98,16 +98,26 @@ applySamp_single <- function(modPath, region = NULL,
                       t0 = t0,
                       tn = tn)
 
+  # Separate posterior samples and metadata
   samp_post <- out[[1]]
-  meta <- out[[2]]
+  metadata <- out[[2]]
   
+  # Format species names
   samp_post$species <- tolower(samp_post$species)
-  meta[, 1] <- tolower(meta[, 1])
+  
+  # Change species names to lowercase in metadata.
+  metadata[, 1] <- tolower(metadata[, 1])
+  
+  # Rename GB to UK to ensure region names are standardised
+  # Also make column names lowercase
+  colnames(metadata) <- tolower(gsub("_GB","_UK", colnames(metadata)))
   
   if (write && !is.null(outPath)) {
-    comb <- list(samp_post, meta)
+    comb <- list(samp_post, metadata)
     save(comb, file = outPath)
   }
+
+  out = list(posterior_samples = samp_post, metadata = metadata)
   
   return(out)
 }
