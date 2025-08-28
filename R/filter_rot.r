@@ -35,7 +35,7 @@ filter_rot <- function(posterior_samples) {
   message(sprintf("%d species removed as they did not pass rule of thumb threshold", n_start - nrow(metadata)))
 
   # Filter samples
-  samples  <- samples %>% filter(species_r_uk %in% metadata$species_r_uk)
+  samples  <- samples %>% filter(species %in% metadata$species_r_uk)
 
   return(list(posterior_samples = samples, metadata = metadata))
 }

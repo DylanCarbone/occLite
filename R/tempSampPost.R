@@ -65,6 +65,7 @@ tempSampPost <- function(indata,
                          tn) {
 
   run_one <- function(sp) {
+
     combineSamps(sp,
                  indata = indata,
                  region = region,
@@ -77,8 +78,8 @@ tempSampPost <- function(indata,
 
   outputs <- lapply(keep, run_one)
 
-  samp_post <- do.call("rbind", lapply(outputs, function(x) x[[1]]))
-  meta <- do.call("rbind", lapply(outputs, function(x) x[[2]]))
+  samp_post <- bind_rows(lapply(outputs, `[[`, 1))
+  meta      <- bind_rows(lapply(outputs, `[[`, 2))
 
   meta <- data.frame(Species = meta$species,
                      n_obs_global = meta$nRec_glob,

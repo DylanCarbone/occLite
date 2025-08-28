@@ -107,6 +107,7 @@ combineSamps <- function(species,
       region_aggs <- unlist(out$region_aggs[region])
       region_site <- rowSums(sapply(region_aggs, function(x) dat[[paste0("r_", x)]][dat$Site]))
     }
+
     dat_reg <- cbind(dat_df, region_site)
     dat_reg <- dat_reg[dat_reg$region_site == 1 & dat_reg$year >= (t0 - (out$min_year - 1)) & dat_reg$year <= (tn - (out$min_year - 1)), ]
     nRec_reg <- sum(dat_reg$rec)
@@ -131,35 +132,52 @@ combineSamps <- function(species,
 
   diff <- nrow(raw_occ) - sample_n
 
-  if (diff < -tolerance) {
-    message("Not enough posterior samples for ", species)
-    return(NULL)
-  } else if (diff > tolerance) {
-    raw_occ <- raw_occ[sample(seq_len(nrow(raw_occ)), sample_n), ]
+  n <- nrow(raw_occ)
+  if (n >= sample_n) {
+    raw_occ <- raw_occ[sample(seq_len(n), sample_n), , drop = FALSE]
   } else {
-    raw_occ <- raw_occ[seq_len(min(nrow(raw_occ), sample_n)), ]
+    short_by <- sample_n - n
+    if (short_by > tolerance) {
+      message("Not enough posterior samples for ", species,
+              " (have ", n, ", need ", sample_n, ", tolerance ", tolerance, ").")
+      return(NULL)
+    }
   }
-
-  colnames(raw_occ) <- paste0("year_", out$min_year:out$max_year)
-  raw_occ$iteration <- seq_len(nrow(raw_occ))
-  raw_occ$species <- species
 
   first <- min(datm$year[datm$rec == 1]) + (out$min_year - 1)
   last <- max(datm$year[datm$rec == 1]) + (out$min_year - 1)
 
   yrs <- sort(unique(datm$year[datm$rec == 1]))
-  gaps <- if (length(yrs) > 1) diff(range(yrs)) else 1
+  gap <- if (length(yrs) > 1) max(diff(yrs)) else 1   # largest run of missing years
+  
+  # --- Extract rule-of-thumb metrics if present ---
+  rot <- NULL
+  if (!is.null(attr(out, "metadata")$analysis$spp_Metrics)) {
+    rot <- as.data.frame(attr(out, "metadata")$analysis$spp_Metrics)
 
+    # EqualWt and HighSpec decision trees (see https://www.biorxiv.org/content/10.1101/813626v1.full)
+    rot$EqualWt <- ifelse(rot$prop_abs >= 0.990, rot$P90 >= 3.1, rot$P90 >= 6.7)
+    rot$HighSpec <- ifelse(rot$prop_abs >= 0.958, rot$P90 >= 9.5, rot$P90 >= 29)
+  }else{
+    rot <- data.frame(median = NA, P90 = NA, visits_median = NA, visits_P90 = NA, prop_list_one = NA, prop_repeats_grp = NA, prop_abs = NA, EqualWt = NA, HighSpec = NA)
+  }
+
+  # construct metadata table
   meta <- data.frame(species = species,
                      nRec_glob = ifelse(exists("nRec_glob"), nRec_glob, NA),
                      nRec_reg = ifelse(exists("nRec_reg"), nRec_reg, NA),
                      first = first, last = last,
-                     gap = gaps,
+                     gap = gap,
                      firstMod = t0, lastMod = tn,
-                     median = NA, P90 = NA,
-                     visits_median = NA, visits_P90 = NA,
-                     prop_list_one = NA, prop_repeats_grp = NA, prop_abs = NA,
-                     EqualWt = NA, HighSpec = NA)
+                     rot,
+                     row.names = NULL)
 
-  return(list(raw_occ, meta))
+  # --- Rename posterior columns consistently ---
+  colnames(raw_occ) <- paste0("year_", out$min_year:out$max_year)
+
+  # --- Always add iteration and species as named columns ---
+  raw_occ$iteration <- seq_len(nrow(raw_occ))
+  raw_occ$species   <- species
+
+  return(list(raw_occ = raw_occ, meta = meta))
 }
