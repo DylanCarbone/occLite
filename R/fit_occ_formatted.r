@@ -57,7 +57,9 @@ fit_occ_formatted <- function(spp,
 
     # --- Create list of all sites (with spatial covariates) if not provided ---
     if (is.null(allsites)) {
-    allsites <- unique(obdata[, c("gridref", covnames), with = FALSE])
+    allsites <- obdata %>%
+        dplyr::select(gridref, dplyr::all_of(covnames)) %>%
+        dplyr::distinct()
     }
 
     # Record start time for performance tracking
