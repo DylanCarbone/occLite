@@ -2,7 +2,7 @@
 #' @import ggplot2 patchwork
 #' @export
 #' 
-produce_comparison_plots <- function(occti_loess_samples, sparta_occupancy_estimates_folder, output_folder = "sparta_occti_comparison", sparta_region){
+produce_comparison_plots <- function(occti_loess_samples, sparta_occupancy_estimates_folder, output_folder = "sparta_occti_comparison", sparta_region, year_min_for_occti_comp = NULL, year_max_for_occti_comp = NULL){
   
     sparta_occ_species_paths = list.files(sparta_occupancy_estimates_folder, pattern = "*.rdata", recursive = TRUE, full.names = TRUE)
 
@@ -34,8 +34,22 @@ produce_comparison_plots <- function(occti_loess_samples, sparta_occupancy_estim
 
         # Obtain sparta outputs
         load(sparta_occ_species_paths[which(sparta_occ_species == species_occ)])
-        
+
         plot_sparta <- plot_sparta(out, reg_agg = sparta_region, main = NULL)
+        
+        if(all(!is.null(c(year_min_for_occti_comp, year_max_for_occti_comp)))){
+
+            occti_bounds = range(loess_summary_species$year)
+
+            if(occti_bounds[1] != year_min_for_occti_comp){
+                plot_sparta = plot_sparta + geom_vline(xintercept = occti_bounds[1], linetype = "dashed", colour = "blue", size = 1.5)
+            }
+
+            if(occti_bounds[2] != year_max_for_occti_comp){
+                plot_sparta = plot_sparta + geom_vline(xintercept = occti_bounds[2], linetype = "dashed", colour = "red", size = 1.5)
+            }
+
+        }
 
         combined = plot_sparta + plot_occti +
         plot_annotation(

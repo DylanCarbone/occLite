@@ -37,10 +37,6 @@ plot_sparta <- function(occDet, main = occDet$SPP_NAME, reg_agg = NULL) {
     geom_ribbon(aes(ymin = quant_025, ymax = quant_975), fill = "red", alpha = 0.15) +
     geom_line(colour = "darkred", size = 1.2) +
     geom_point(aes(colour = rhat_threshold), size = 3) +
-    scale_colour_manual(
-      name = "Rhat",
-      values = c("Good (<1.1)" = "black", "Bad (>1.1)" = "orange")
-    ) +
     xlab("Year") +
     ylab("Occupancy") +
     ggtitle(main) +
@@ -48,7 +44,11 @@ plot_sparta <- function(occDet, main = occDet$SPP_NAME, reg_agg = NULL) {
     theme(
       plot.title = element_text(lineheight = .8, face = "bold"),
       legend.position = "bottom"
+    ) +
+    scale_colour_manual(
+      name = "Rhat",
+      values = c("Good (<1.1)" = "black", "Bad (>1.1)" = "orange", "start" = "blue", "end" = "red")
     )
-  
+
   return(p)
 }

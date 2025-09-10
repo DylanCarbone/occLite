@@ -80,6 +80,8 @@ combineSamps <- function(species,
                            t0, 
                            tn) {
 
+  browser()
+
   region_psi_fs <- paste0("psi.fs", ifelse(!is.null(region), paste0(".r_", region), ""))
 
   filepath <- file.path(indata, paste0(species, ".rdata"))
@@ -174,6 +176,10 @@ combineSamps <- function(species,
 
   # --- Rename posterior columns consistently ---
   colnames(raw_occ) <- paste0("year_", out$min_year:out$max_year)
+  
+  # Restrict posterior samples to t0–tn
+  keep_years <- paste0("year_", t0:tn)
+  raw_occ <- raw_occ[, c(keep_years, "iteration", "species"), drop = FALSE]
 
   # --- Always add iteration and species as named columns ---
   raw_occ$iteration <- seq_len(nrow(raw_occ))
