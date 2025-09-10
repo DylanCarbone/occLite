@@ -79,9 +79,7 @@ combineSamps <- function(species,
                            minObs,
                            t0, 
                            tn) {
-
-  browser()
-
+                            
   region_psi_fs <- paste0("psi.fs", ifelse(!is.null(region), paste0(".r_", region), ""))
 
   filepath <- file.path(indata, paste0(species, ".rdata"))
