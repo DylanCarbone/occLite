@@ -70,12 +70,17 @@ if(calculate_st_trends){
 if(method == "bma"){
     
 mean_se_logit <- loess_predictions %>%
-  mutate(pred =  logit(bound_for_logit(pred))) %>%
+  mutate(pred = logit(bound_for_logit(pred))) %>%
   group_by(species, year) %>%
-  summarise(index = mean(pred, na.rm = TRUE),
-            se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))),
-            .groups = "drop") %>%
-  mutate(se = ifelse(se != 0 & !is.na(se), se, 1e-6))
+  summarise(
+    index = mean(pred, na.rm = TRUE),   # will return NaN if all values NA
+    se    = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    index = ifelse(is.nan(index), NA_real_, index),  # convert NaN to proper NA
+    se    = ifelse(se != 0 & !is.na(se), se, 1e-06) # fudge only zero or NA SE
+  )
 
 indicator_output <- BRCindicators::bma(data = mean_se_logit, seFromData = TRUE, m.scale = "logit")
 
