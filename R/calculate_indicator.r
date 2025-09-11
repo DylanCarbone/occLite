@@ -36,7 +36,7 @@
 #' @importFrom reshape2 acast
 #' @export
 
-calculate_indicator <- function(loess_predictions, sparta_output = TRUE, method, min_year = NULL, max_year = NULL, bma_ind = NULL, save_outputs = TRUE, outputs_path = "indicator_outputs.rds"){
+calculate_indicator <- function(loess_predictions, sparta_output = TRUE, method, min_year = NULL, max_year = NULL, bma_ind = NULL, save_outputs = TRUE, outputs_path = "indicator_outputs.rds", calculate_st_trends = FALSE, st_trend_interval = 5){
 
 # Pivot the sparta outputs (if the outputs are sparta)
 if(sparta_output){
@@ -46,23 +46,36 @@ if(sparta_output){
 if (!method %in% c("lambda", "bma")){ 
     stop("Method must be one of lambda or bma")}
 
-min_year <- ifelse(is.null(min_year), 
-            yes = min(loess_predictions$year),
-            no = startYear)
-max_year <- ifelse(is.null(max_year), 
-            yes = max(loess_predictions$year),
-            no = endYear)
+if(calculate_st_trends){
 
-loess_predictions = loess_predictions %>% filter(year >= min_year, year <= max_year)
+    min_year = max(loess_predictions$year) - st_trend_interval
+
+    message(paste("calculating short term indicator trends from year", ))
+
+    loess_predictions = loess_predictions %>% filter(year >= min_year)
+
+} else{
+
+    min_year <- ifelse(is.null(min_year), 
+        yes = min(loess_predictions$year),
+        no = startYear)
+    max_year <- ifelse(is.null(max_year), 
+        yes = max(loess_predictions$year),
+        no = endYear)
+
+    loess_predictions = loess_predictions %>% filter(year >= min_year, year <= max_year)
+
+}
 
 if(method == "bma"){
     
 mean_se_logit <- loess_predictions %>%
-    mutate(pred = logit(bound_for_logit(pred))) %>%
-    group_by(species, year) %>%
-    summarise(index = mean(pred),
-    se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred)))) %>%
-    mutate(se = ifelse(se != 0, se, 1e-6))
+  mutate(pred = ifelse(is.na(pred), NA, logit(bound_for_logit(pred)))) %>%
+  group_by(species, year) %>%
+  summarise(index = mean(pred, na.rm = TRUE),
+            se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))),
+            .groups = "drop") %>%
+  mutate(se = ifelse(se != 0 & !is.na(se), se, 1e-6))
 
 indicator_output <- BRCindicators::bma(data = mean_se_logit, seFromData = TRUE, m.scale = "logit")
 

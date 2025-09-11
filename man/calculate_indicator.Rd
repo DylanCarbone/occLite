@@ -12,7 +12,9 @@ calculate_indicator(
   max_year = NULL,
   bma_ind = NULL,
   save_outputs = TRUE,
-  outputs_path = "indicator_outputs.rds"
+  outputs_path = "indicator_outputs.rds",
+  calculate_st_trends = FALSE,
+  st_trend_interval = 5
 )
 }
 \arguments{

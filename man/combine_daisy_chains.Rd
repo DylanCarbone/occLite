@@ -2,19 +2,27 @@
 % Please edit documentation in R/combine_daisy_chains.r
 \name{combine_daisy_chains}
 \alias{combine_daisy_chains}
-\title{Combine Daisy-Chained Model Outputs Across Iteration Chunks and Chains}
+\title{Combine Daisy-Chained Model Outputs Across Chains}
 \usage{
-combine_daisy_chains(input_path, output_path = "combined_chains")
+combine_daisy_chains(
+  input_path,
+  output_path = "combined_chains",
+  keep_n = 2000
+)
 }
 \arguments{
 \item{input_path}{Character. Directory with .rdata chain files.}
 
 \item{output_path}{Character. Directory to save combined outputs (default = "combined_chains").}
+
+\item{keep_n}{Integer. Number of posterior draws to keep from the end.
+Default = 2000.}
 }
 \value{
 Invisibly returns vector of saved file paths.
 }
 \description{
-Combines .rdata files from daisy-chained model runs (multiple iteration chunks,
-multiple chains per chunk) into a single model object per species.
+For each species, loads only the \emph{final} iteration chunk across
+all chains, combines them, and trims to the last 2000 posterior draws.
+Metadata (regions, region_aggs, etc.) is retrieved from the \emph{first} chunk.
 }
