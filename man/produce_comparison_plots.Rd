@@ -8,7 +8,9 @@ produce_comparison_plots(
   occti_loess_samples,
   sparta_occupancy_estimates_folder,
   output_folder = "sparta_occti_comparison",
-  sparta_region
+  sparta_region,
+  year_min_for_occti_comp = NULL,
+  year_max_for_occti_comp = NULL
 )
 }
 \description{
