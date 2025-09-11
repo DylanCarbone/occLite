@@ -70,7 +70,7 @@ if(calculate_st_trends){
 if(method == "bma"){
     
 mean_se_logit <- loess_predictions %>%
-  mutate(pred = ifelse(is.na(pred), NA, logit(bound_for_logit(pred)))) %>%
+  mutate(pred =  logit(bound_for_logit(pred))) %>%
   group_by(species, year) %>%
   summarise(index = mean(pred, na.rm = TRUE),
             se = sd(pred, na.rm = TRUE) / sqrt(sum(!is.na(pred))),
