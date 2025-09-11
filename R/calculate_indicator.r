@@ -50,7 +50,7 @@ if(calculate_st_trends){
 
     min_year = max(loess_predictions$year) - st_trend_interval
 
-    message(paste("calculating short term indicator trends from year", ))
+    message(paste("calculating short term indicator trends from year", min_year))
 
     loess_predictions = loess_predictions %>% filter(year >= min_year)
 
