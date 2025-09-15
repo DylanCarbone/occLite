@@ -66,6 +66,8 @@ tempSampPost <- function(indata,
 
   run_one <- function(sp) {
 
+    print(paste("processing species", sp))
+
     combineSamps(sp,
                  indata = indata,
                  region = region,

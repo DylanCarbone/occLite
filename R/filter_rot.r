@@ -10,32 +10,36 @@
 #' @export 
 #' 
 
-filter_rot <- function(posterior_samples) {
+filter_rot <- function(posterior_samples, region = "uk") {
 
   samples  <- posterior_samples$posterior_samples
   metadata <- posterior_samples$metadata
 
-  # Stage 1: Filter by rot_equalwt_r_uk
+  # Stage 1: Filter by rot_equalwt_r_<region>
   n_start <- nrow(metadata)
-  metadata <- metadata %>% filter(rot_equalwt_r_uk == TRUE)
-  message(sprintf("%d species removed as rot_equalwt_r_uk was NA or FALSE", n_start - nrow(metadata)))
+
+  # Make sure region is lowercase
+  region = tolower(region)
+
+  metadata <- metadata %>% filter(!!sym(paste0("rot_equalwt_r_", region)) == TRUE)
+  message(sprintf("%d species removed as rot_equalwt_r_%s was NA or FALSE", n_start - nrow(metadata), region))
 
   if(nrow(metadata) == 0){
-    stop("Your metadata has zero rows after filtering for TRUE rot_equalwt_r_uk values. Filtering by rule of thumb is not possible")
+    stop(paste("Your metadata has zero rows after filtering for TRUE", paste0("rot_equalwt_r_", region), "values. Filtering by rule of thumb is not possible"))
   }
-
+  
   # Stage 2: Apply pass rule
   n_start <- nrow(metadata)
   metadata <- metadata %>%
-    mutate(pass = ifelse(rot_prop_abs_r_uk >= 0.990, 
-                         rot_p90_r_uk >= 3.1, 
-                         rot_p90_r_uk >= 6.7)) %>%
+    mutate(pass = ifelse(!!sym(paste0("rot_prop_abs_r_", region)) >= 0.990, 
+                         !!sym(paste0("rot_p90_r_", region)) >= 3.1, 
+                         !!sym(paste0("rot_p90_r_", region)) >= 6.7)) %>%
     filter(pass)
   
   message(sprintf("%d species removed as they did not pass rule of thumb threshold", n_start - nrow(metadata)))
 
   # Filter samples
-  samples  <- samples %>% filter(species %in% metadata$species_r_uk)
+  samples  <- samples %>% filter(species %in% metadata[[paste0("species_r_", region)]])
 
   return(list(posterior_samples = samples, metadata = metadata))
 }
