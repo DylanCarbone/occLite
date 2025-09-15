@@ -144,14 +144,22 @@ combineSamps <- function(species,
     }
   }
 
-  first <- min(datm$year[datm$rec == 1]) + (out$min_year - 1)
-  last <- max(datm$year[datm$rec == 1]) + (out$min_year - 1)
+  yrs_obs <- datm$year[datm$rec == 1]
 
-  yrs <- sort(unique(datm$year[datm$rec == 1]))
-  gap <- if (length(yrs) > 1) max(diff(yrs)) else 1   # largest run of missing years
+  if (length(yrs_obs) > 0) {
+    first <- min(yrs_obs) + (out$min_year - 1)
+    last  <- max(yrs_obs) + (out$min_year - 1)
+    yrs   <- sort(unique(yrs_obs))
+    gap   <- if (length(yrs) > 1) max(diff(yrs)) else NA
+  } else {
+    first <- NA
+    last  <- NA
+    gap   <- NA
+  }
   
   # --- Extract rule-of-thumb metrics if present ---
   rot <- NULL
+
   if (!is.null(attr(out, "metadata")$analysis$spp_Metrics)) {
     rot <- as.data.frame(attr(out, "metadata")$analysis$spp_Metrics)
 
