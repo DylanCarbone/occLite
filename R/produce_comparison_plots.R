@@ -35,7 +35,7 @@ produce_comparison_plots <- function(occti_loess_samples, sparta_occupancy_estim
         # Obtain sparta outputs
         load(sparta_occ_species_paths[which(sparta_occ_species == species_occ)])
 
-        plot_sparta <- plot_sparta(out, reg_agg = sparta_region, main = NULL)
+        plot_sparta <- plot_sparta(out, reg_agg = sparta_region, main = NULL, year_min_for_occti_comp, year_max_for_occti_comp)
         
         if(all(!is.null(c(year_min_for_occti_comp, year_max_for_occti_comp)))){
 

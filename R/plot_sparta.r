@@ -7,7 +7,7 @@
 #' 
 #' @import ggplot2
 #' @export
-plot_sparta <- function(occDet, main = occDet$SPP_NAME, reg_agg = NULL) {
+plot_sparta <- function(occDet, main = occDet$SPP_NAME, reg_agg = NULL, trend_start_year = NULL, trend_end_year = NULL) {
   
   # gets summary output from the BUGS files 
   spp_data <- as.data.frame(occDet$BUGSoutput$summary)
@@ -23,6 +23,12 @@ plot_sparta <- function(occDet, main = occDet$SPP_NAME, reg_agg = NULL) {
   new_data <- spp_data[grepl(paste0("^psi.fs", reg_agg, "\\["), spp_data$occDet), ]
   new_data$year <- (occDet$min_year - 1) + 
     as.numeric(gsub(paste0("psi.fs", reg_agg), "", gsub("\\[|\\]","", row.names(new_data))))
+  
+  #Impose year filter
+  if(all(!is.null(c(trend_start_year, trend_end_year)))){
+  new_data = new_data %>%
+    filter(year >= trend_start_year, year <= trend_end_year)
+  }
   
   # rename columns
   names(new_data) <- gsub("2.5%", "quant_025", names(new_data))
